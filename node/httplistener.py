@@ -1,6 +1,11 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
+""" listener """
+
+# imports
 import json
 import random
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+from handshake import exchangeKeyRespond
 
 
 class S(BaseHTTPRequestHandler):
@@ -18,17 +23,18 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
 
     def do_POST(self):
+        # set headers and respond with status code
         self._set_headers()
-        print("in post method")
         self.data_string = self.rfile.read(int(self.headers['Content-Length']))
-
         self.send_response(200)
         self.end_headers()
 
-        print(self.data_string)
+        # parse data
         data = json.loads(self.data_string)
-        print(data["key"])
-        self.wfile.write(b"de")
+        print(data["publicKey"])
+        print(self.client_address)
+        print(exchangeKeyRespond(self.client_address, data["publicKey"]))
+        self.wfile.write(bytes(exchangeKeyRespond(self.client_address, data["publicKey"]), "utf-8"))
         return
 
 
