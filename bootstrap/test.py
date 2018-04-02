@@ -45,7 +45,7 @@ def connect(local_addr, addr):
             # STOP.set()
 
 
-def main(host='127.0.0.1', port=8081):
+def main(host, port):
     sa = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sa.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sa.connect((host, port))
@@ -90,4 +90,4 @@ def main(host='127.0.0.1', port=8081):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, message='%(asctime)s %(message)s')
-    main(*addr_from_args(sys.argv))
+    main('35.185.101.249', 8081)

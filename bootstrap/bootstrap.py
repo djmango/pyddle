@@ -1,6 +1,7 @@
 """ the bootstrap system for initial connection to the puddle network """
 
 # imports
+import json
 import logging
 import socket
 import sys
@@ -11,7 +12,7 @@ logger = logging.getLogger()
 clients = {}
 
 
-def main(host='0.0.0.0', port=8081):
+def main(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((host, port))
@@ -33,6 +34,12 @@ def main(host='0.0.0.0', port=8081):
         if data_addr == addr:
             logger.info('client reply matches')
             clients[addr] = Client(conn, addr, priv_addr)
+
+            # write new node to storage
+            clientsList = json.load(open('nodes.json', 'r+'))
+            with open('nodes.json', 'w') as file:
+                clientsList.append(addr)
+                json.dump(clientsList, file)
         else:
             logger.info('client reply did not match')
             conn.close()
@@ -53,4 +60,4 @@ def main(host='0.0.0.0', port=8081):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
-    main(*addr_from_args(sys.argv))
+    main('0.0.0.0', 8081)

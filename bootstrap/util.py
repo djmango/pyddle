@@ -5,7 +5,7 @@ import struct
 from collections import namedtuple
 
 
-def addr_from_args(args, ip='127.0.0.1', port=9999):
+def args_to_addr(args, ip='127.0.0.1', port=9999):
     """ convert arguments [ip, port] into an address (ip, port) """
     if len(args) >= 3:
         ip, port = args[1], int(args[2])
@@ -23,7 +23,7 @@ def msg_to_addr(data):
 
 
 def addr_to_msg(addr):
-    """ convert address [ip, port] into a message (ip:port) """
+    """ convert address (ip, port) into a message (ip:port) """
     return '{}:{}'.format(addr[0], str(addr[1])).encode('utf-8')
 
 
