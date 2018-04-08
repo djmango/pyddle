@@ -37,24 +37,24 @@ def connect(local_addr, addr):
             s.connect(addr)
         except socket.error:
             continue
-        # except Exception as exc:
-        #     logger.exception("unexpected exception encountered")
-        #     break
         else:
             logger.info("connected from %s to %s success!", local_addr, addr)
-            # STOP.set()
 
 
 def main(host, port):
+    # build socket and get private address
     sa = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sa.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sa.connect((host, port))
     priv_addr = sa.getsockname()
 
+    # connect to bootstrap server
     send_msg(sa, addr_to_msg(priv_addr))
     data = recv_msg(sa)
     logger.info("client %s %s - received data: %s",
                 priv_addr[0], priv_addr[1], data)
+
+    # store our public address and tell the server that we recieved
     pub_addr = msg_to_addr(data)
     send_msg(sa, addr_to_msg(pub_addr))
 

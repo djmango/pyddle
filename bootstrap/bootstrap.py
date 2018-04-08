@@ -9,7 +9,7 @@ import sys
 from util import *
 
 logger = logging.getLogger()
-clients = {}
+clients = []
 
 
 def main(host, port):
@@ -25,21 +25,20 @@ def main(host, port):
         except socket.timeout:
             continue
 
+        # upon recieving a connection, store the address
         logger.info('connection address: %s', addr)
         data = recv_msg(conn)
         priv_addr = msg_to_addr(data)
+
+        # tell the sender their address
         send_msg(conn, addr_to_msg(addr))
         data = recv_msg(conn)
         data_addr = msg_to_addr(data)
         if data_addr == addr:
             logger.info('client reply matches')
-            clients[addr] = Client(conn, addr, priv_addr)
 
-            # write new node to storage
-            clientsList = json.load(open('nodes.json', 'r+'))
-            with open('nodes.json', 'w') as file:
-                clientsList.append(addr)
-                json.dump(clientsList, file)
+            with open('nodes.json', 'w+') as file:
+                json.dump(str(clients), file)
         else:
             logger.info('client reply did not match')
             conn.close()
@@ -47,7 +46,7 @@ def main(host, port):
         logger.info('server - received data: %s', data)
 
         if len(clients) == 2:
-            (addr1, c1), (addr2, c2) = clients.items()
+            (addr1, c1), (addr2, c2) = "b"
             logger.info('server - send client info to: %s', c1.pub)
             send_msg(c1.conn, c2.peer_msg())
             logger.info('server - send client info to: %s', c2.pub)

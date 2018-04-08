@@ -54,7 +54,11 @@ def recv_msg(sock):
     return recvall(sock, msglen)
 
 
-class Client(namedtuple('Client', 'conn, pub, priv')):
+class node:
+    def __init__(self, conn, pub, priv):
+        self.conn = conn
+        self.pub = pub
+        self.priv = priv
 
     def peer_msg(self):
         return addr_to_msg(self.pub) + b'|' + addr_to_msg(self.priv)
