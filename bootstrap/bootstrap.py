@@ -6,7 +6,7 @@ import logging
 import socket
 import sys
 
-from util import *
+import bootstrapUtil
 
 logger = logging.getLogger()
 clients = []
@@ -27,13 +27,13 @@ def main(host, port):
 
         # upon recieving a connection, store the address
         logger.info('connection address: %s', addr)
-        data = recv_msg(conn)
-        priv_addr = msg_to_addr(data)
+        data = bootstrapUtil.recv_msg(conn)
+        priv_addr = bootstrapUtil.msg_to_addr(data)
 
         # tell the sender their address
-        send_msg(conn, addr_to_msg(addr))
-        data = recv_msg(conn)
-        data_addr = msg_to_addr(data)
+        bootstrapUtil.send_msg(conn, bootstrapUtil.addr_to_msg(addr))
+        data = bootstrapUtil.recv_msg(conn)
+        data_addr = bootstrapUtil.msg_to_addr(data)
         if data_addr == addr:
             logger.info('client reply matches')
 
@@ -48,9 +48,9 @@ def main(host, port):
         if len(clients) == 2:
             (addr1, c1), (addr2, c2) = "b"
             logger.info('server - send client info to: %s', c1.pub)
-            send_msg(c1.conn, c2.peer_msg())
+            bootstrapUtil.send_msg(c1.conn, c2.peer_msg())
             logger.info('server - send client info to: %s', c2.pub)
-            send_msg(c2.conn, c1.peer_msg())
+            bootstrapUtil.send_msg(c2.conn, c1.peer_msg())
             clients.pop(addr1)
             clients.pop(addr2)
 

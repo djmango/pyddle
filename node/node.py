@@ -5,7 +5,7 @@ import threading
 import httplistener
 import httprequester
 
-threading.Thread(target=httplistener.runHttpServer, daemon=True).start()
+threading.Thread(target=httplistener.run, daemon=True).start()
 threading.Thread(target=httprequester.request).start()
 
 def talkBack():
