@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
+
 """ the node acts as the http listener and sender for the rest of the system """
 
 # imports
 import threading
-import httplistener
-import httprequester
+from pyddle.node import httplistener
+from pyddle.node import httprequester
 
 threading.Thread(target=httplistener.run, daemon=True).start()
 threading.Thread(target=httprequester.request).start()
@@ -12,3 +14,4 @@ def talkBack():
     pass
 while True:
     talkBack()
+    

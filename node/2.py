@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """ used to generate rsa public-private keypair and complete a handshake given an address """
 
 # imports

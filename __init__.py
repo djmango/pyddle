@@ -1,4 +1,3 @@
-""" package level imports, mainly for utility functions """
+#!/usr/bin/env python3
 
-# imports
-from .util import bootstrapUtil, keyUtil
+""" pyddle is god? """

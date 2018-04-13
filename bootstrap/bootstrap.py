@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """ the bootstrap system for initial connection to the puddle network """
 
 # imports
@@ -6,7 +8,7 @@ import logging
 import socket
 import sys
 
-import bootstrapUtil
+from . import bootstrapUtil
 
 logger = logging.getLogger()
 clients = []

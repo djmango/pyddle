@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """ listener """
 
 # imports
@@ -5,7 +7,7 @@ import json
 import random
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from handshake import exchangeKeyRespond
+from pyddle.p2p.p2pUtil import exchangeKeyRespond
 
 
 class S(BaseHTTPRequestHandler):
