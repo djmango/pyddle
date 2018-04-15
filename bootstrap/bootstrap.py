@@ -6,7 +6,6 @@
 import json
 import logging
 import socket
-import sys
 
 from . import bootstrapUtil
 
