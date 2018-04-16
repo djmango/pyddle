@@ -1,8 +1,11 @@
+#!/usr/bin/env python3
+
 """ pyddle is the python implementation of the puddle system """
 
 # imports
 import sys
 import os
+import logging
 
 sys.path.insert(0, os.path.abspath('..'))
 

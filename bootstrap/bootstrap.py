@@ -7,9 +7,10 @@ import json
 import logging
 import socket
 
-from . import bootstrapUtil
+from pyddle.bootstrap.bootstrapUtil import send_msg, recv_msg, msg_to_addr, addr_to_msg
 
-logger = logging.getLogger()
+logger = logging.getLogger('bootstrap')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 clients = []
 
 
@@ -28,13 +29,13 @@ def main(host, port):
 
         # upon recieving a connection, store the address
         logger.info('connection address: %s', addr)
-        data = bootstrapUtil.recv_msg(conn)
-        priv_addr = bootstrapUtil.msg_to_addr(data)
+        data = recv_msg(conn)
+        priv_addr = msg_to_addr(data)
 
         # tell the sender their address
-        bootstrapUtil.send_msg(conn, bootstrapUtil.addr_to_msg(addr))
-        data = bootstrapUtil.recv_msg(conn)
-        data_addr = bootstrapUtil.msg_to_addr(data)
+        send_msg(conn, addr_to_msg(addr))
+        data = recv_msg(conn)
+        data_addr = msg_to_addr(data)
         if data_addr == addr:
             logger.info('client reply matches')
 
@@ -49,9 +50,9 @@ def main(host, port):
         if len(clients) == 2:
             (addr1, c1), (addr2, c2) = "b"
             logger.info('server - send client info to: %s', c1.pub)
-            bootstrapUtil.send_msg(c1.conn, c2.peer_msg())
+            send_msg(c1.conn, c2.peer_msg())
             logger.info('server - send client info to: %s', c2.pub)
-            bootstrapUtil.send_msg(c2.conn, c1.peer_msg())
+            send_msg(c2.conn, c1.peer_msg())
             clients.pop(addr1)
             clients.pop(addr2)
 

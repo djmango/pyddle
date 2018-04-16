@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """ the p2p system is designed to locate all possible peers, and check if they are alive """
 
 # imports
@@ -9,43 +11,12 @@ import socket
 import sys
 from threading import Event, Thread
 
-import bootstrapUtil
+from pyddle.p2p.p2pUtil import accept, connect
+from pyddle.bootstrap.bootstrapUtil import send_msg, recv_msg, addr_to_msg, msg_to_addr
 
-logger = logging.getLogger('client')
+logger = logging.getLogger('p2p')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 STOP = Event()
-
-
-def accept(port):
-    logger.info("accept %s", port)
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(('', port))
-    s.listen(1)
-    s.settimeout(5)
-    while not STOP.is_set():
-        try:
-            conn, addr = s.accept()
-        except socket.timeout:
-            continue
-        else:
-            logger.info("Accept %s connected!", port)
-            STOP.set()
-
-
-def connect(local_addr, addr):
-    logger.info("connect from %s to %s", local_addr, addr)
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(local_addr)
-    while not STOP.is_set():
-        try:
-            s.connect(addr)
-        except socket.error:
-            continue
-        else:
-            logger.info("connected from %s to %s success!", local_addr, addr)
-
 
 def connBootstrap(host, port):
     # build socket and get private address
@@ -55,19 +26,19 @@ def connBootstrap(host, port):
     priv_addr = sa.getsockname()
 
     # connect to bootstrap server
-    bootstrapUtil.send_msg(sa, bootstrapUtil.addr_to_msg(priv_addr))
-    data = bootstrapUtil.recv_msg(sa)
+    send_msg(sa, addr_to_msg(priv_addr))
+    data = recv_msg(sa)
     logger.info("client %s %s - received data: %s",
                 priv_addr[0], priv_addr[1], data)
 
     # store our public address and tell the server that we recieved
-    pub_addr = bootstrapUtil.msg_to_addr(data)
-    bootstrapUtil.send_msg(sa, bootstrapUtil.addr_to_msg(pub_addr))
+    pub_addr = msg_to_addr(data)
+    send_msg(sa, addr_to_msg(pub_addr))
 
-    data = bootstrapUtil.recv_msg(sa)
+    data = recv_msg(sa)
     pubdata, privdata = data.split(b'|')
-    client_pub_addr = bootstrapUtil.msg_to_addr(pubdata)
-    client_priv_addr = bootstrapUtil.msg_to_addr(privdata)
+    client_pub_addr = msg_to_addr(pubdata)
+    client_priv_addr = msg_to_addr(privdata)
     logger.info(
         "client public is %s and private is %s, peer public is %s private is %s",
         pub_addr, priv_addr, client_pub_addr, client_priv_addr,
