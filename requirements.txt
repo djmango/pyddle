@@ -1,3 +1,4 @@
 clint==0.5.1
 rsa
 pycryptodome==3.5.1
+sqlite

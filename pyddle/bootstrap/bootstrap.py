@@ -7,6 +7,8 @@ import json
 import logging
 import socket
 
+# from .. import database
+
 from pyddle.bootstrap.bootstrapUtil import send_msg, recv_msg, msg_to_addr, addr_to_msg
 
 logger = logging.getLogger('bootstrap')
