@@ -3,21 +3,27 @@
 """ pyddle is the python implementation of the puddle system """
 
 # imports
-import sys
-import os
+import argparse
 import logging
+import os
+import sys
+import time
+
+start_time = time.time()
+
 import pyddle
 
-sys.path.insert(0, os.path.abspath('..'))
+parser = argparse.ArgumentParser(
+    description='python3 implementation of the puddle system')
+parser.add_argument('-t', '--test', help='test flag, runs specified test')
 
-from clint.arguments import Args
-from clint.textui import puts, colored, indent
+args = parser.parse_args()
+print(args.test)
 
-args = Args()
+if (args.test):
+    testArg = args.test
+    if (testArg == 'what'):
+        # temp test, for whatever im doing
+        pyddle.test.test.getPath()
 
-with indent(4, quote='>>>'):
-    puts(colored.red('Aruments passed in: ') + str(args.all))
-    puts(colored.red('Flags detected: ') + str(args.flags))
-    puts(colored.red('Files detected: ') + str(args.files))
-    puts(colored.red('NOT Files detected: ') + str(args.not_files))
-    puts(colored.red('Grouped Arguments: ') + str(dict(args.grouped)))
+print("--- %s seconds ---" % (time.time() - start_time))

@@ -7,11 +7,6 @@ import threading
 from pyddle.node import httplistener
 from pyddle.node import httprequester
 
-threading.Thread(target=httplistener.run, daemon=True).start()
-threading.Thread(target=httprequester.request).start()
-
-def talkBack():
-    pass
-while True:
-    talkBack()
-    
+def main():
+    threading.Thread(target=httplistener.run, daemon=True).start()
+    threading.Thread(target=httprequester.request).start()

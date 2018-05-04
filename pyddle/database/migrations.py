@@ -4,7 +4,6 @@
 
 # imports
 import sqlite3
-from pyddle import bootstrap
 
 def migrateBootstrap():
     """ creates bootstrap table in bootstrap.db """

@@ -2,4 +2,10 @@
 
 """ tests for pyddle, should include a function for pretty much everything i care about """
 
-from pyddle import *
+import os
+import pyddle
+
+path = os.path.dirname(pyddle.__file__)
+
+def getPath():
+    print(path)
