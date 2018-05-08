@@ -12,7 +12,6 @@ import socket
 from pyddle.bootstrap.bootstrapUtil import send_msg, recv_msg, msg_to_addr, addr_to_msg
 
 logger = logging.getLogger('bootstrap')
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 clients = []
 
 

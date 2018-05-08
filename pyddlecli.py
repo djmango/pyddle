@@ -5,25 +5,33 @@
 # imports
 import argparse
 import logging
-import os
+from os import path
+from time import time
 import sys
-import time
 
-start_time = time.time()
+# get start time before pyddle package import, as included packages are predictable
+start_time = time()
 
+# god?
 import pyddle
 
-parser = argparse.ArgumentParser(
-    description='python3 implementation of the puddle system')
+# nobodyreadsme.md
+logging.basicConfig(level=logging.INFO, message='%(asctime)s %(message)s', stream=sys.stdout)
+logging.getLogger('pyddle.test')
+
+# find god?
+path = path.dirname(pyddle.__file__)
+logging.info('found pyddle at ' + path)
+
+parser = argparse.ArgumentParser(description='python3 implementation of the puddle system')
 parser.add_argument('-t', '--test', help='test flag, runs specified test')
 
 args = parser.parse_args()
-print(args.test)
 
-if (args.test):
+if (args):
     testArg = args.test
     if (testArg == 'what'):
         # temp test, for whatever im doing
         pyddle.test.test.getPath()
 
-print("--- %s seconds ---" % (time.time() - start_time))
+logging.info("executed in %s seconds" % (time() - start_time))

@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 
 """ the p2p system is designed to locate all possible peers, and check if they are alive """
-
 # imports
-import os
-import sys
 import inspect
 import logging
+import os
 import socket
 import sys
 from threading import Event, Thread
 
+from pyddle.bootstrap.bootstrapUtil import (addr_to_msg, msg_to_addr, recv_msg,
+                                            send_msg)
 from pyddle.p2p.p2pUtil import accept, connect
-from pyddle.bootstrap.bootstrapUtil import send_msg, recv_msg, addr_to_msg, msg_to_addr
 
-logger = logging.getLogger('p2p')
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logger = logging.getLogger('pyddle.p2p')
 STOP = Event()
+
 
 def connBootstrap(host, port):
     # build socket and get private address
