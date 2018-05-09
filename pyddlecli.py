@@ -2,7 +2,6 @@
 
 """ pyddle is the python implementation of the puddle system """
 
-# imports
 import argparse
 import logging
 from os import path
@@ -16,8 +15,7 @@ start_time = time()
 import pyddle
 
 # nobodyreadsme.md
-logging.basicConfig(level=logging.INFO, message='%(asctime)s %(message)s', stream=sys.stdout)
-logging.getLogger('pyddle.test')
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(asctime)s (%(name)s) %(message)s', stream=sys.stdout)
 
 # find god?
 path = path.dirname(pyddle.__file__)

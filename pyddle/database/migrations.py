@@ -2,14 +2,14 @@
 
 """ migration functions unique to submodule """
 
-# imports
+import logging
 import os
 import sqlite3
 
 import pyddle
 
-# get project path
 path = os.path.dirname(pyddle.__file__)
+logger = logging.getLogger(__name__)
 
 
 def migrateBootstrap():

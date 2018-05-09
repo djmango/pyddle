@@ -2,10 +2,11 @@
 
 """ general utility functions for the bootstrap system """
 
-# imports
+import logging
 import struct
 from collections import namedtuple
 
+logger = logging.getLogger(__name__)
 
 def args_to_addr(args, ip='127.0.0.1', port=9999):
     """ convert arguments [ip, port] into an address (ip, port) """
