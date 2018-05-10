@@ -30,6 +30,9 @@ if (args):
     testArg = args.test
     if (testArg == 'what'):
         # temp test, for whatever im doing
-        pyddle.test.test.getPath()
+        # pyddle.p2p.p2p.connBootstrap('35.185.101.249', 8081)
+        # pyddle.p2p.p2p.connBootstrap('127.0.0.1', 8081)
+        b = pyddle.database.databaseUtil.database('test', True)
+        b.insertIntoTable('bee', ['b', 'a'])
 
 logging.info("executed in %s seconds" % (time() - start_time))

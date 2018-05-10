@@ -2,6 +2,6 @@
 
 """ pyddle is god? """
 
-__all__ = ["bootstrap", "database", "node", "p2p", "test"]
+__all__ = ["bootstrap", "database", "p2p", "test"]
 
-from . import bootstrap, database, node, p2p, test
+from . import bootstrap, database, p2p, test

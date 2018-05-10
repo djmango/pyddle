@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" key generation, send, and response functions """
+""" peer and peerConnection classes, contains everything needed for basic p2p communication and management """
 
 import logging
 import os
@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 import traceback
+from json import load
 
 import requests
 from Crypto.Cipher import PKCS1_OAEP
@@ -60,45 +61,12 @@ def exchangeKeyRespond(sender, senderPublicKey):
     return publicKey
 
 
-def accept(port):
-    logger.info("accept %s", port)
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(('', port))
-    s.listen(1)
-    s.settimeout(5)
-    _loopHolder = 0
-    while _loopHolder < 50:
-        try:
-            conn, addr = s.accept()
-        except socket.timeout:
-            continue
-        else:
-            logger.info("Accept %s connected!", port)
-        time.sleep(1)
-        _loopHolder = _loopHolder + 1
-
-
-def connect(local_addr, addr):
-    logger.info("connect from %s to %s", local_addr, addr)
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(local_addr)
-    _loopHolder = 0
-    while _loopHolder < 50:
-        try:
-            s.connect(addr)
-        except socket.error:
-            continue
-        else:
-            logger.info("connected from %s to %s success!", local_addr, addr)
-        time.sleep(1)
-        _loopHolder = _loopHolder + 1
-
+# the following classes are based off of:
+# python p2p framework base @ http://cs.berry.edu/~nhamid/p2p/framework-python.html
 
 def peerDebug(msg):
     """ Prints a messsage to the screen with the name of the current thread """
-    print("[%s] %s" % (str(threading.currentThread().getName()), msg))
+    logging.info("[%s] %s" % (str(threading.currentThread().getName()), msg))
 
 
 class peer:
@@ -107,7 +75,7 @@ class peer:
 
     """
 
-    def __init__(self, maxpeers, serverport, myid=None, serverhost=None):
+    def __init__(self, maxpeers, serverport, myid=None, serverhost=None, debug=False):
         """ Initializes a peer servent (sic.) with the ability to catalog
         information for up to maxpeers number of peers (maxpeers may
         be set to 0 to allow unlimited number of peers), listening on
@@ -117,8 +85,7 @@ class peer:
         Internet host like Google.
 
         """
-        self.debug = 0
-
+        self.debug = debug
         self.maxpeers = int(maxpeers)
         self.serverport = int(serverport)
         if serverhost:
@@ -140,6 +107,10 @@ class peer:
         self.handlers = {}
         self.router = None
 
+    def __debug(self, msg):
+        if self.debug:
+            peerDebug(msg)
+
     def __initserverhost(self):
         """ Attempt to connect to an Internet host in order to determine the
         local machine's IP address.
@@ -148,12 +119,8 @@ class peer:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect(("www.google.com", 80))
         self.serverhost = s.getsockname()[0]
+        self.__debug('Found self at ' + self.serverhost)
         s.close()
-
-    def __debug(self, msg):
-
-        if self.debug:
-            peerDebug(msg)
 
     def __handlepeer(self, clientsock):
         """
