@@ -16,8 +16,7 @@ def migrateBootstrap():
     """ creates bootstrap table in bootstrap.db """
     dbconn = sqlite3.connect(path + '/database/bootstrap.db')
     db = dbconn.cursor()
-    db.execute(
-        """ create table bootstrap (ip varchar(50), privKey varchar(1000), pubKey varchar(1000)) """)
+    db.execute(""" create table bootstrap (ip varchar(50), privKey varchar(1000), pubKey varchar(1000)) """)
 
     dbconn.commit()
     dbconn.close()
