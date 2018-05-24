@@ -14,14 +14,12 @@ start_time = time()
 
 import pyddle
 
-logging.basicConfig(level=logging.INFO,
-                    format='[%(levelname)s] %(asctime)s (%(name)s) %(message)s', stream=sys.stdout)
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(asctime)s (%(name)s) %(message)s', stream=sys.stdout)
 
 path = path.dirname(pyddle.__file__)
 logging.info('found pyddle at ' + path)
 
-parser = argparse.ArgumentParser(
-    description='python3 implementation of the puddle system')
+parser = argparse.ArgumentParser(description='python3 implementation of the puddle system')
 parser.add_argument('-t', '--test', help='test flag, runs specified test')
 
 args = parser.parse_args()
@@ -34,5 +32,6 @@ if (args):
         # pyddle.p2p.p2p.connBootstrap('127.0.0.1', 8081)
         b = pyddle.database.databaseUtil.database('test', True)
         b.insert(['jhon', 'groceryies'])
+        logging.info(b.get("t1='jhon'"))
 
 logging.info("executed in %s seconds" % (time() - start_time))

@@ -13,11 +13,14 @@ logger = logging.getLogger(__name__)
 
 
 class database:
-    """ contains everything needed for data storage, retrieval, and management. 
+    """ database: contains everything needed for data storage, retrieval, and management. 
     when a new instance of this class is created, a table is specified. 
     this will be the table refering to the module that is utilizing the class. 
     optimally, a module should not use a table that is not its own, 
-    however i am not omniscient so i dont know if this will change in the future """
+    however i am not omniscient so i dont know if this will change in the future
+
+        [table]: the table used for this instance, will be auto-populated if not already
+    """
 
     def __init__(self, table, debug=False):
         self.table = table
@@ -30,7 +33,7 @@ class database:
         self.db = self.dbConn.cursor()
 
         # check if table exists
-        c = self.db.execute("""SELECT name FROM sqlite_master WHERE type='table' AND name='%s'""" % self.table)
+        c = self.db.execute(""" select name from sqlite_master where type='table' and name='%s'""" % self.table)
 
         # if table does not exist, create correct table
         if c.fetchone() is None:
@@ -40,6 +43,10 @@ class database:
                 self.db.execute(""" create table test (t1 varchar(50), t2 varchar(50)) """)
 
     def insert(self, data):
+        """ insert: orginize given data and insert into table
+
+            [data]: a standard list, this is what will be entered into the columns, in order
+        """
         # when inserting n amount of values, we must parse the data into a single string
         values = ''
         n = 0
@@ -53,6 +60,19 @@ class database:
         # insert into table
         self.db.execute("""insert into %(table)s values (%(values)s)""" % (
             {'table': self.table, 'values': values}))
+        self.dbConn.commit()
 
-    def get(self, where):
-        pass
+    def get(self, where, select='*'):
+        """ get: query table and retrieve all corresponding entries
+
+            [where]: a sql formatted query filter
+
+            [select]: (optional) specify columns to return
+        """
+
+        # execute query
+        self.db.execute(""" select %(select)s from %(table)s where %(where)s """ % (
+            {'select' : select, 'table': self.table, 'where': where}))
+
+        # get all rows and return
+        return self.db.fetchall()
