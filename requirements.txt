@@ -1,4 +1,2 @@
 rsa
 pycryptodome==3.5.1
-sqlite3
-requests

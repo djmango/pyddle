@@ -16,5 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 def connBootstrap(host, port):
-    selfPeer = pyddle.p2p.p2pUtil.peer(25, port, serverhost=(requests.get('https://api.ipify.org/?format=json')).json()['ip'], debug=True)
-    selfPeer.addpeer(None, host, port)
+    selfPeer = pyddle.p2p.p2pUtil.peer(25, port, debug=True)
+    selfPeer.addhandler('ping')
+    selfPeer.addpeer('bootstrap', host, port)
+    selfPeer.checklivepeers()
+    logger.info(selfPeer.getpeerids())
+    selfPeer.sendtopeer('bootstrap', 'test', 'tesy')
+    # selfPeer.connectandsend('127.0.0.1', 3132, 'test', 'be')

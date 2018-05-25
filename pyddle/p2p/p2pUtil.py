@@ -64,11 +64,6 @@ def exchangeKeyRespond(sender, senderPublicKey):
 # the following classes are based off of:
 # python p2p framework base @ http://cs.berry.edu/~nhamid/p2p/framework-python.html
 
-def peerDebug(msg):
-    """ Prints a messsage to the screen with the name of the current thread """
-    logging.info("[%s] %s" % (str(threading.currentThread().getName()), msg))
-
-
 class peer:
     """ Implements the core functionality that might be used by a peer in a
     P2P network.
@@ -107,10 +102,6 @@ class peer:
         self.handlers = {}
         self.router = None
 
-    def __debug(self, msg):
-        if self.debug:
-            peerDebug(msg)
-
     def __initserverhost(self):
         """ Attempt to connect to an Internet host in order to determine the
         local machine's IP address.
@@ -119,7 +110,7 @@ class peer:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect(("www.google.com", 80))
         self.serverhost = s.getsockname()[0]
-        self.__debug('Found self at ' + self.serverhost)
+        logger.debug('Found self at ' + self.serverhost)
         s.close()
 
     def __handlepeer(self, clientsock):
@@ -129,8 +120,8 @@ class peer:
         Dispatches messages from the socket connection
         """
 
-        self.__debug('New child ' + str(threading.currentThread().getName()))
-        self.__debug('Connected ' + str(clientsock.getpeername()))
+        logger.debug('New child ' + str(threading.currentThread().getName()))
+        logger.debug('Connected ' + str(clientsock.getpeername()))
 
         host, port = clientsock.getpeername()
         peerconn = peerConnection(None, host, port, clientsock, debug=False)
@@ -140,9 +131,10 @@ class peer:
             if msgtype:
                 msgtype = msgtype.upper()
             if msgtype not in self.handlers:
-                self.__debug('Not handled: %s: %s' % (msgtype, msgdata))
+                print(self.handlers)
+                logger.debug('Not handled: %s: %s' % (msgtype, msgdata))
             else:
-                self.__debug('Handling peer msg: %s: %s' % (msgtype, msgdata))
+                logger.debug('Handling peer msg: %s: %s' % (msgtype, msgdata))
                 self.handlers[msgtype](peerconn, msgdata)
         except KeyboardInterrupt:
             raise
@@ -150,7 +142,7 @@ class peer:
             if self.debug:
                 traceback.print_exc()
 
-        self.__debug('Disconnecting ' + str(clientsock.getpeername()))
+        logger.debug('Disconnecting ' + str(clientsock.getpeername()))
         peerconn.close()
 
     # end handlepeer method
@@ -174,10 +166,10 @@ class peer:
                              args=[stabilizer, delay])
         t.start()
 
-    def addhandler(self, msgtype, handler):
+    def addhandler(self, msgtype, handler=None):
         """ Registers the handler for the given message type with this peer """
         assert len(msgtype) == 4
-        self.handlers[msgtype] = handler
+        self.handlers[msgtype.upper()] = handler
 
     def addrouter(self, router):
         """ Registers a routing function with this peer. The setup of routing
@@ -275,7 +267,7 @@ class peer:
         if self.router:
             nextpid, host, port = self.router(peerid)
         if not self.router or not nextpid:
-            self.__debug('Unable to route %s to %s' % (msgtype, peerid))
+            logger.debug('Unable to route %s to %s' % (msgtype, peerid))
             return None
         #host,port = self.peers[nextpid]
         return self.connectandsend(host, port, msgtype, msgdata,
@@ -296,13 +288,13 @@ class peer:
         try:
             peerconn = peerConnection(pid, host, port, debug=self.debug)
             peerconn.senddata(msgtype, msgdata)
-            self.__debug('Sent %s: %s' % (pid, msgtype))
+            logger.debug('Sent %s: %s' % (pid, msgtype))
 
             if waitreply:
                 onereply = peerconn.recvdata()
                 while (onereply != (None, None)):
                     msgreply.append(onereply)
-                    self.__debug('Got reply %s: %s'
+                    logger.debug('Got reply %s: %s'
                                  % (pid, str(msgreply)))
                     onereply = peerconn.recvdata()
             peerconn.close()
@@ -326,7 +318,7 @@ class peer:
         for pid in self.peers:
             isconnected = False
             try:
-                self.__debug('Check live %s' % pid)
+                logger.debug('Check live %s' % pid)
                 host, port = self.peers[pid]
                 peerconn = peerConnection(pid, host, port, debug=self.debug)
                 peerconn.senddata('PING', '')
@@ -349,12 +341,12 @@ class peer:
 
         s = self.makeserversocket(self.serverport)
         s.settimeout(2)
-        self.__debug('Server started: %s (%s:%d)'
+        logger.debug('Server started: %s (%s:%d)'
                      % (self.myid, self.serverhost, self.serverport))
 
         while not self.shutdown:
             try:
-                self.__debug('Listening for connections...')
+                logger.debug('Listening for connections...')
                 clientsock, clientaddr = s.accept()
                 clientsock.settimeout(None)
 
@@ -362,7 +354,7 @@ class peer:
                                      args=[clientsock])
                 t.start()
             except KeyboardInterrupt:
-                print('KeyboardInterrupt: stopping mainloop')
+                logger.info('KeyboardInterrupt: stopping mainloop')
                 self.shutdown = True
                 continue
             except:
@@ -371,7 +363,7 @@ class peer:
                     continue
 
         # end while loop
-        self.__debug('Main loop exiting')
+        logger.debug('Main loop exiting')
 
         s.close()
 
@@ -393,18 +385,17 @@ class peerConnection:
         else:
             self.s = sock
 
-        self.sd = self.s.makefile('rw', 0)
-
     def __makemsg(self, msgtype, msgdata):
 
-        msglen = len(msgdata)
-        msg = struct.pack("!4sL%ds" % msglen, msgtype, msglen, msgdata)
-        return msg
+        # force msglen to be 8 chars
+        msglen = str(len(msgdata))
+        if int(msglen) > 8:
+            logger.error('message can not be longer than 10,000,000 chars')
+        while 8 - len(msglen) != 0:
+            msglen = '0' + msglen
 
-    def __debug(self, msg):
-
-        if self.debug:
-            peerDebug(msg)
+        msg = msgtype.encode() + msglen.encode() + msgdata.encode()
+        return(msg)
 
     def senddata(self, msgtype, msgdata):
         """
@@ -416,8 +407,7 @@ class peerConnection:
 
         try:
             msg = self.__makemsg(msgtype, msgdata)
-            self.sd.write(msg)
-            self.sd.flush()
+            self.s.send(msg)
         except KeyboardInterrupt:
             raise
         except:
@@ -435,23 +425,19 @@ class peerConnection:
         """
 
         try:
-            msgtype = self.sd.read(4)
+            msgtype = self.s.recv(4).decode()
             if not msgtype:
                 return (None, None)
 
-            lenstr = self.sd.read(4)
-            msglen = int(struct.unpack("!L", lenstr)[0])
-            msg = ""
+            msglen = int(self.s.recv(8).decode())
+            msgdata = ""
 
-            while len(msg) != msglen:
-                data = self.sd.read(min(2048, msglen - len(msg)))
-                if not len(data):
-                    break
-                msg += data
+            if len(msgdata) != msglen:
+                data = self.s.recv(min(2048, msglen - len(msgdata))).decode()
+                msgdata += data
 
-            if len(msg) != msglen:
+            if len(msgdata) != msglen:
                 return (None, None)
-
         except KeyboardInterrupt:
             raise
         except:
@@ -459,7 +445,7 @@ class peerConnection:
                 traceback.print_exc()
             return (None, None)
 
-        return (msgtype, msg)
+        return (msgtype, msgdata)
 
     # end recvdata method
 
@@ -473,7 +459,6 @@ class peerConnection:
 
         self.s.close()
         self.s = None
-        self.sd = None
 
     def __str__(self):
 

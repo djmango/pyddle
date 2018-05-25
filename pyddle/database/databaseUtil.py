@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class database:
-    """ database: contains everything needed for data storage, retrieval, and management. 
+    """ contains everything needed for data storage, retrieval, and management. 
     when a new instance of this class is created, a table is specified. 
     this will be the table refering to the module that is utilizing the class. 
     optimally, a module should not use a table that is not its own, 
@@ -33,17 +33,17 @@ class database:
         self.db = self.dbConn.cursor()
 
         # check if table exists
-        c = self.db.execute(""" select name from sqlite_master where type='table' and name='%s'""" % self.table)
+        self.db.execute(""" select name from sqlite_master where type='table' and name='%s'""" % self.table)
 
         # if table does not exist, create correct table
-        if c.fetchone() is None:
+        if self.db.fetchone() is None:
             if self.table == 'bootstrap':
                 self.db.execute(""" create table bootstrap (ip varchar(50), privKey varchar(1000), pubKey varchar(1000)) """)
             if self.table == 'test':
                 self.db.execute(""" create table test (t1 varchar(50), t2 varchar(50)) """)
 
     def insert(self, data):
-        """ insert: orginize given data and insert into table
+        """ orginize given data and insert into table
 
             [data]: a standard list, this is what will be entered into the columns, in order
         """
@@ -63,7 +63,7 @@ class database:
         self.dbConn.commit()
 
     def get(self, where, select='*'):
-        """ get: query table and retrieve all corresponding entries
+        """ query table and retrieve all corresponding entries
 
             [where]: a sql formatted query filter
 

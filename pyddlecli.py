@@ -14,7 +14,7 @@ start_time = time()
 
 import pyddle
 
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(asctime)s (%(name)s) %(message)s', stream=sys.stdout)
+logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(asctime)s (%(name)s) %(message)s', stream=sys.stdout)
 
 path = path.dirname(pyddle.__file__)
 logging.info('found pyddle at ' + path)
@@ -30,8 +30,12 @@ if (args):
         # temp test, for whatever im doing
         # pyddle.p2p.p2p.connBootstrap('35.185.101.249', 8081)
         # pyddle.p2p.p2p.connBootstrap('127.0.0.1', 8081)
-        b = pyddle.database.databaseUtil.database('test', True)
-        b.insert(['jhon', 'groceryies'])
-        logging.info(b.get("t1='jhon'"))
+        # b = pyddle.database.databaseUtil.database('test', True)
+        # b.insert(['jhon', 'groceryies'])
+        # logging.info(b.get("t1='jhon'"))
+        pyddle.bootstrap.bootstrap.main('0.0.0.0', 3132)
+    
+    if (testArg == 'w'):
+        pyddle.p2p.p2p.connBootstrap('127.0.0.1', 3132)
 
 logging.info("executed in %s seconds" % (time() - start_time))
