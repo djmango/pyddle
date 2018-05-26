@@ -16,10 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 def connBootstrap(host, port):
-    selfPeer = pyddle.p2p.p2pUtil.peer(25, port, debug=True)
+    selfPeer = pyddle.p2p.p2pUtil.peer(25, 3131, debug=True)
     selfPeer.addhandler('ping')
-    selfPeer.addpeer('bootstrap', host, port)
-    selfPeer.checklivepeers()
-    logger.info(selfPeer.getpeerids())
-    selfPeer.sendtopeer('bootstrap', 'test', 'tesy')
-    # selfPeer.connectandsend('127.0.0.1', 3132, 'test', 'be')
+    selfPeer.addpeer('bootstrap', host, 3132)
+    selfPeer.addrouter({'bootstrap' : ['bootstrap', host, port]})
+    selfPeer.sendtopeer('bootstrap', 'PING', '')
+    selfPeer.sendtopeer('bootstrap', 'TEST', 'hello im jeff')

@@ -124,14 +124,13 @@ class peer:
         logger.debug('Connected ' + str(clientsock.getpeername()))
 
         host, port = clientsock.getpeername()
-        peerconn = peerConnection(None, host, port, clientsock, debug=False)
+        peerconn = peerConnection(str(host), host, port, clientsock, debug=False)
 
         try:
             msgtype, msgdata = peerconn.recvdata()
             if msgtype:
                 msgtype = msgtype.upper()
             if msgtype not in self.handlers:
-                print(self.handlers)
                 logger.debug('Not handled: %s: %s' % (msgtype, msgdata))
             else:
                 logger.debug('Handling peer msg: %s: %s' % (msgtype, msgdata))
@@ -265,11 +264,11 @@ class peer:
         """
 
         if self.router:
-            nextpid, host, port = self.router(peerid)
+            nextpid, host, port = self.router[peerid]
         if not self.router or not nextpid:
             logger.debug('Unable to route %s to %s' % (msgtype, peerid))
             return None
-        #host,port = self.peers[nextpid]
+        #host,port = self.peers[nextpid]      
         return self.connectandsend(host, port, msgtype, msgdata,
                                    pid=nextpid,
                                    waitreply=waitreply)
@@ -378,6 +377,8 @@ class peerConnection:
 
         self.id = peerid
         self.debug = debug
+        self.host = host
+        self.port = port
 
         if not sock:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
