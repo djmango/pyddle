@@ -15,15 +15,14 @@ path = os.path.dirname(pyddle.__file__)
 logger = logging.getLogger(__name__)
 
 
-def handleTEST(peerconn, msgdata):
-    print(msgdata)
-    print(peerconn.id)
+def handleECHO(peerconn, msgdata):
+    logger.info(peerconn.host)
+    pyddle.bootstrapNode.connectandsend(peerconn.host, 51234, 'ECHO', msgdata)
 
 def main(host, port):
     db = pyddle.database.databaseUtil.database('bootstrap', True)
-    bootstrap = pyddle.p2p.p2pUtil.peer(25, 3132)
-    bootstrap.addhandler('test', handleTEST)
-    bootstrap.addhandler('ping')
-    t = threading.Thread(target=bootstrap.mainloop)
+    pyddle.bootstrapNode = pyddle.p2p.p2pUtil.peer(25, 51234)
+    pyddle.bootstrapNode.addhandler('echo', handleECHO)
+    pyddle.bootstrapNode.addhandler('ping')
+    t = threading.Thread(target=pyddle.bootstrapNode.mainloop)
     t.start()
-    

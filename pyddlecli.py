@@ -33,9 +33,9 @@ if (args):
         # b = pyddle.database.databaseUtil.database('test', True)
         # b.insert(['jhon', 'groceryies'])
         # logging.info(b.get("t1='jhon'"))
-        pyddle.bootstrap.bootstrap.main('0.0.0.0', 3132)
+        pyddle.bootstrap.bootstrap.main('0.0.0.0', 51234)
     
     if (testArg == 'w'):
-        pyddle.p2p.p2p.connBootstrap('127.0.0.1', 3132)
+        pyddle.p2p.p2p.connBootstrap('192.168.192.14', 51234)
 
 logging.info("executed in %s seconds" % (time() - start_time))

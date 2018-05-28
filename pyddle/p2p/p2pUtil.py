@@ -5,12 +5,9 @@
 import logging
 import os
 import socket
-import struct
-import sys
 import threading
 import time
 import traceback
-from json import load
 
 import requests
 from Crypto.Cipher import PKCS1_OAEP
@@ -390,8 +387,8 @@ class peerConnection:
 
         # force msglen to be 8 chars
         msglen = str(len(msgdata))
-        if int(msglen) > 8:
-            logger.error('message can not be longer than 10,000,000 chars')
+        if int(msglen) > 99999999:
+            logger.error('message can not be longer than 99,999,999 chars')
         while 8 - len(msglen) != 0:
             msglen = '0' + msglen
 
