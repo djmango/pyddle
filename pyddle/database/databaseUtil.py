@@ -37,8 +37,8 @@ class database:
 
         # if table does not exist, create correct table
         if self.db.fetchone() is None:
-            if self.table == 'bootstrap':
-                self.db.execute(""" create table bootstrap (ip varchar(50), privKey varchar(1000), pubKey varchar(1000)) """)
+            if self.table == 'peers':
+                self.db.execute(""" create table peers (ip varchar(50), selfPrivKey varchar(2000), selfPubKey varchar(1000), peerPubKey varchar(1000)) """)
             if self.table == 'test':
                 self.db.execute(""" create table test (t1 varchar(50), t2 varchar(50)) """)
 
@@ -58,21 +58,44 @@ class database:
                 values = values + "'" + i + "', "
         
         # insert into table
-        self.db.execute("""insert into %(table)s values (%(values)s)""" % (
+        self.db.execute("""insert into %(table)s values (%(values)s);""", (
             {'table': self.table, 'values': values}))
+        self.dbConn.commit()
+    
+    def update(self, data, where):
+        """ update specified rows
+
+            [data]: column1 = value1, column2 = value2
+
+            [where]: a sql condition
+        """
+
+        # update values
+        self.db.execute("""update %(table)s set %(data)s where %(where)s;""", (
+            {'table': self.table, 'data': data, 'where': where}))
         self.dbConn.commit()
 
     def get(self, where, select='*'):
         """ query table and retrieve all corresponding entries
 
-            [where]: a sql formatted query filter
+            [where]: a sql conditions
 
             [select]: (optional) specify columns to return
         """
 
         # execute query
-        self.db.execute(""" select %(select)s from %(table)s where %(where)s """ % (
+        self.db.execute(""" select %(select)s from %(table)s where %(where)s;""", (
             {'select' : select, 'table': self.table, 'where': where}))
 
         # get all rows and return
         return self.db.fetchall()
+
+    def delete(self, where):
+        """ delete a row
+
+            [where]: a sql conditions
+        """
+
+        self.db.execute(""" delete from %(table)s where %(where)s;""", (
+            {'table': self.table, 'where': where}))
+        self.dbConn.commit()

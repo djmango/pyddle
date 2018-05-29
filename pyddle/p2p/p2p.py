@@ -6,27 +6,134 @@ import logging
 import os
 import threading
 
+from Crypto.Signature import pkcs1_15
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.PublicKey import RSA
+
 import pyddle
 
 path = os.path.dirname(pyddle.__file__)
 logger = logging.getLogger(__name__)
 
 
-def handleTEST(peerconn, msgdata):
-    logger.info(msgdata)
-    logger.info(peerconn.id)
-
 def handleECHO(peerconn, msgdata):
-    logger.info(peerconn.host)
-    pyddle.selfNode.connectandsend(peerconn.host, 51234, 'ECHO', msgdata)
+    pyddle.p2pNode.connectandsend(peerconn.host, 51234, 'ECHO', msgdata)
+
+def authenticatePeer(address):
+    # generate private key, unique to the peer
+    privKey = RSA.generate(2048)
+
+    # derive public key from private key and export
+    pubKey = privKey.publickey().exportKey("PEM").decode('utf-8')
+
+    pyddle.dbPeers.insert([address, privKey, pubKey, 'authInProg'])
+
+    # send public key
+    pyddle.p2pNode.connectandsend(address, 51234, 'KREQ', pubKey)
+
+def handleKREQ(peerconn, msgdata):
+    """ this handles the key request, it *is* the key responder """
+
+    # generate private key, unique to the peer
+    privKey = RSA.generate(2048)
+
+    # derive public key from private key and export
+    pubKey = privKey.publickey().exportKey("PEM").decode('utf-8')
+
+    # store info in db
+    pyddle.dbPeers.insert([peerconn.host, privKey, pubKey, msgdata])
+
+    # reply with our public key
+    pyddle.p2pNode.connectandsend(peerconn.host, 51234, 'KRES', pubKey)
+
+def handleKRES(peerconn, msgdata):
+    """ this handles the key response. read the functions in plain english """
+
+    # get our private key for the peer
+    selfPrivKey = RSA.import_key(pyddle.dbPeers.get('ip=%s' % peerconn.ip, 'selfPrivKey'))
+
+    # sign a verification message
+    verifMsg = pkcs1_15.new(selfPrivKey).sign('trustme?')
+
+    # add the peer's public key to the database
+    pyddle.dbPeers.update('peerPubKey=%s' % msgdata, 'ip=%s' % peerconn.ip)
+
+    # send with our signed verification message
+    pyddle.p2pNode.connectandsend(peerconn.host, 51234, 'AREQ', verifMsg)
+
+def handleAREQ(peerconn, msgdata):
+    """ handle authentication requests """
+
+    # get our private key for the peer
+    selfPrivKey = RSA.import_key(pyddle.dbPeers.get('ip=%s' % peerconn.ip, 'selfPrivKey'))
+
+    # get their public key
+    peerPubKey = RSA.import_key(pyddle.dbPeers.get('ip=%s' % peerconn.ip, 'selfPrivKey'))
+
+    # check the signature
+    try:
+        pkcs1_15.new(peerPubKey).verify('trustme?', msgdata)
+        logger.debug("The signature is valid.")
+
+        # this peer is valid, add them to the list
+        pyddle.p2pNode.addpeer(peerconn.host, peerconn.host, 51234)
+        pyddle.p2pNode.addrouter({peerconn.host : [peerconn.host, peerconn.host, 51234]})
+
+        # sign our own verification message
+        verifMsg = pkcs1_15.new(selfPrivKey).sign('trustme?')
+
+        # send with our signed verification message
+        pyddle.p2pNode.connectandsend(peerconn.host, 51234, 'ARES', verifMsg)
+
+    except (ValueError, TypeError):
+        logger.debug("The signature is not valid.")
+        pyddle.dbPeers.delete('ip=' % peerconn.host)
+        #TODO blacklist the ip or something, its invalid
+
+def handleARES(peerconn, msgdata):
+    """ oh boy, our authentication request went through! lets see if this fellow is legit """
+
+    # get their public key
+    peerPubKey = RSA.import_key(pyddle.dbPeers.get('ip=%s' % peerconn.ip, 'selfPrivKey'))
+
+    # check the signature
+    try:
+        pkcs1_15.new(peerPubKey).verify('trustme?', msgdata)
+        logger.debug("The signature is valid. We made a new friend!")
+
+        # yay, we made a new friend! add them to the node list
+        pyddle.p2pNode.addpeer(peerconn.host, peerconn.host, 51234)
+        pyddle.p2pNode.addrouter({peerconn.host : [peerconn.host, peerconn.host, 51234]})
+
+    except (ValueError, TypeError):
+        logger.debug("The signature is not valid.")
+        pyddle.dbPeers.delete('ip=' % peerconn.host)
+        #TODO blacklist the ip or something, its invalid
 
 def connBootstrap(host, port):
-    pyddle.selfNode = pyddle.p2p.p2pUtil.peer(25, 51234)
-    pyddle.selfNode.addhandler('ping')
-    pyddle.selfNode.addhandler('echo', handleECHO)
-    t = threading.Thread(target=pyddle.selfNode.mainloop)
+    pyddle.dbPeers = pyddle.database.databaseUtil.database('bootstrap', True)
+    pyddle.p2pNode = pyddle.p2p.p2pUtil.peer(25, 51234)
+    pyddle.p2pNode.addhandler('PING')
+    pyddle.p2pNode.addhandler('ECHO', handleECHO)
+    pyddle.p2pNode.addhandler('KREQ', handleKREQ)
+    pyddle.p2pNode.addhandler('KRES', handleKRES)
+    pyddle.p2pNode.addhandler('AREQ', handleAREQ)
+    pyddle.p2pNode.addhandler('ARES', handleARES)
+    t = threading.Thread(target=pyddle.p2pNode.mainloop)
     t.start()
-    pyddle.selfNode.addpeer('bootstrap', host, 51234)
-    pyddle.selfNode.addrouter({'bootstrap' : ['bootstrap', host, port]})
-    pyddle.selfNode.sendtopeer('bootstrap', 'PING', '')
-    pyddle.selfNode.sendtopeer('bootstrap', 'ECHO', 'hello im jeff')
+    pyddle.p2pNode.addpeer('bootstrap', host, 51234)
+    pyddle.p2pNode.addrouter({'bootstrap' : ['bootstrap', host, 51234]})
+    pyddle.p2pNode.sendtopeer('bootstrap', 'PING', '')
+    pyddle.p2pNode.sendtopeer('bootstrap', 'ECHO', 'hello im jeff')
+
+def runBootstrap(host, port):
+    pyddle.dbPeers = pyddle.database.databaseUtil.database('peers', True)
+    pyddle.p2pNode = pyddle.p2p.p2pUtil.peer(25, 51234, myid='bootstrap')
+    pyddle.p2pNode.addhandler('PING')
+    pyddle.p2pNode.addhandler('ECHO', handleECHO)
+    pyddle.p2pNode.addhandler('KREQ', handleKREQ)
+    pyddle.p2pNode.addhandler('KRES', handleKRES)
+    pyddle.p2pNode.addhandler('AREQ', handleAREQ)
+    pyddle.p2pNode.addhandler('ARES', handleARES)
+    t = threading.Thread(target=pyddle.p2pNode.mainloop)
+    t.start()

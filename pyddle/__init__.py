@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-""" pyddle is god? """
+""" pyddle? """
 
-__all__ = ["bootstrap", "database", "p2p", "test"]
+__all__ = ["database", "p2p", "test"]
 
-from . import bootstrap, database, p2p, test
+from . import database, p2p, test

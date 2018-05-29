@@ -9,54 +9,10 @@ import threading
 import time
 import traceback
 
-import requests
-from Crypto.Cipher import PKCS1_OAEP
-from Crypto.PublicKey import RSA
-
 import pyddle
 
 path = os.path.dirname(pyddle.__file__)
 logger = logging.getLogger(__name__)
-
-
-def genKey(size):
-    return RSA.generate(size)
-
-
-def exchangeKeyRequest(address):
-    # generate private key
-    privateKey = genKey(2048)
-
-    # parse private key
-    privateKeyObject = PKCS1_OAEP.new(privateKey)
-
-    # derive public key from private key and export
-    publicKey = privateKey.publickey().exportKey("PEM").decode('utf-8')
-
-    requests.post(address, json={"publicKey": publicKey})
-
-    return privateKey
-
-
-def exchangeKeyRespond(sender, senderPublicKey):
-    # generate private key
-    privateKey = genKey(2048)
-
-    # parse private key
-    privateKeyObject = PKCS1_OAEP.new(privateKey)
-
-    # format address
-    address = "http://" + str(sender[0]) + ":" + str(sender[1])
-
-    # parse sender public key
-    senderPublicKeyObject = PKCS1_OAEP.new(RSA.import_key(senderPublicKey))
-
-    # derive public key from private key and export
-    publicKey = privateKey.publickey().exportKey("PEM").decode('utf-8')
-
-    # requests.post(address, json={"publicKey": publicKey})
-    return publicKey
-
 
 # the following classes are based off of:
 # python p2p framework base @ http://cs.berry.edu/~nhamid/p2p/framework-python.html
