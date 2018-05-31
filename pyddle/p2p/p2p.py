@@ -5,6 +5,7 @@
 import logging
 import os
 import threading
+import time
 
 from Crypto.Signature import pkcs1_15
 from Crypto.Cipher import PKCS1_OAEP
@@ -26,7 +27,7 @@ def authenticatePeer(address):
     # derive public key from private key and export
     pubKey = privKey.publickey().exportKey("PEM").decode('utf-8')
 
-    pyddle.dbPeers.insert([address, privKey, pubKey, 'authInProg'])
+    pyddle.dbPeers.insert([address, privKey.exportKey("PEM").decode('utf-8'), pubKey, 'authInProg'])
 
     # send public key
     pyddle.p2pNode.connectandsend(address, 51234, 'KREQ', pubKey)
@@ -40,26 +41,29 @@ def handleKREQ(peerconn, msgdata):
     # derive public key from private key and export
     pubKey = privKey.publickey().exportKey("PEM").decode('utf-8')
 
-    # store info in db
-    pyddle.dbPeers.insert([peerconn.host, privKey, pubKey, msgdata])
-
     # reply with our public key
     pyddle.p2pNode.connectandsend(peerconn.host, 51234, 'KRES', pubKey)
+
+    # store info in db
+    pyddle.dbPeers.insert([peerconn.host, privKey.exportKey("PEM").decode('utf-8'), pubKey, str(msgdata)])
 
 def handleKRES(peerconn, msgdata):
     """ this handles the key response. read the functions in plain english """
 
     # get our private key for the peer
-    selfPrivKey = RSA.import_key(pyddle.dbPeers.get('ip=%s' % peerconn.ip, 'selfPrivKey'))
+    key = str(pyddle.dbPeers.get("ip", 'selfPrivKey'))
+    print(key)
+    selfPrivKey = RSA.import_key(key)
+    print('heee')
 
     # sign a verification message
     verifMsg = pkcs1_15.new(selfPrivKey).sign('trustme?')
 
-    # add the peer's public key to the database
-    pyddle.dbPeers.update('peerPubKey=%s' % msgdata, 'ip=%s' % peerconn.ip)
-
     # send with our signed verification message
     pyddle.p2pNode.connectandsend(peerconn.host, 51234, 'AREQ', verifMsg)
+
+    # add the peer's public key to the database
+    pyddle.dbPeers.update('peerPubKey=%s' % msgdata, 'ip=%s' % peerconn.ip)
 
 def handleAREQ(peerconn, msgdata):
     """ handle authentication requests """
@@ -110,9 +114,9 @@ def handleARES(peerconn, msgdata):
         pyddle.dbPeers.delete('ip=' % peerconn.host)
         #TODO blacklist the ip or something, its invalid
 
-def connBootstrap(host, port):
-    pyddle.dbPeers = pyddle.database.databaseUtil.database('bootstrap', True)
-    pyddle.p2pNode = pyddle.p2p.p2pUtil.peer(25, 51234)
+def connBootstrap(host, port=51234):
+    pyddle.dbPeers = pyddle.database.databaseUtil.database('peers', True)
+    pyddle.p2pNode = pyddle.p2p.p2pUtil.peer(25, port)
     pyddle.p2pNode.addhandler('PING')
     pyddle.p2pNode.addhandler('ECHO', handleECHO)
     pyddle.p2pNode.addhandler('KREQ', handleKREQ)
@@ -121,14 +125,14 @@ def connBootstrap(host, port):
     pyddle.p2pNode.addhandler('ARES', handleARES)
     t = threading.Thread(target=pyddle.p2pNode.mainloop)
     t.start()
-    pyddle.p2pNode.addpeer('bootstrap', host, 51234)
-    pyddle.p2pNode.addrouter({'bootstrap' : ['bootstrap', host, 51234]})
+    pyddle.p2pNode.addpeer('bootstrap', host, port)
+    pyddle.p2pNode.addrouter({'bootstrap' : ['bootstrap', host, port]})
     pyddle.p2pNode.sendtopeer('bootstrap', 'PING', '')
-    pyddle.p2pNode.sendtopeer('bootstrap', 'ECHO', 'hello im jeff')
+    authenticatePeer(host)
 
-def runBootstrap(host, port):
+def runBootstrap(host, port=51234):
     pyddle.dbPeers = pyddle.database.databaseUtil.database('peers', True)
-    pyddle.p2pNode = pyddle.p2p.p2pUtil.peer(25, 51234, myid='bootstrap')
+    pyddle.p2pNode = pyddle.p2p.p2pUtil.peer(25, port, myid='bootstrap')
     pyddle.p2pNode.addhandler('PING')
     pyddle.p2pNode.addhandler('ECHO', handleECHO)
     pyddle.p2pNode.addhandler('KREQ', handleKREQ)

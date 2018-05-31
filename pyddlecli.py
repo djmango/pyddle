@@ -8,6 +8,10 @@ from os import path
 from time import time
 import sys
 
+from Crypto.Signature import pkcs1_15
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.PublicKey import RSA
+
 # get start time before pyddle package import, as included packages are predictable
 start_time = time()
 
@@ -22,7 +26,7 @@ logging.info('found pyddle at ' + path)
 parser = argparse.ArgumentParser(description='python3 implementation of the puddle system')
 parser.add_argument('-t', '--test', help='test flag, runs specified test')
 
-args = parser.parse_args()
+args = parser.parse_args()    
 
 if (args):
     testArg = args.test
@@ -33,9 +37,23 @@ if (args):
         # b = pyddle.database.databaseUtil.database('test', True)
         # b.insert(['jhon', 'groceryies'])
         # logging.info(b.get("t1='jhon'"))
-        pyddle.p2p.p2p.runBootstrap('0.0.0.0', 51234)
+        pyddle.p2p.p2p.runBootstrap('0.0.0.0')
     
     if (testArg == 'w'):
-        pyddle.p2p.p2p.connBootstrap('192.168.192.14', 51234)
+        pyddle.p2p.p2p.connBootstrap('192.168.192.14')
+
+    if (testArg == 't'):
+        b = pyddle.database.databaseUtil.database('test', True)
+        b.insert(['jhon', 'groceryies'])
+        logging.info(b.get("t1='jhon'"))
+        c = pyddle.database.databaseUtil.database('peers', True)
+        logging.info(b.get("c"))
+
+    if (testArg == 'k'):
+        key = RSA.generate(2048)
+        der = key.exportKey("DER")
+        print(der)
+        key2 = RSA.import_key(der)
+        print(key2)
 
 logging.info("executed in %s seconds" % (time() - start_time))

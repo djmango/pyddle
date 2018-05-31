@@ -29,16 +29,16 @@ class database:
 
     def __dbConnect(self):
         # initialize server connection
-        self.dbConn = sqlite3.connect(path + '/database/db.sqlite')
+        self.dbConn = sqlite3.connect(path + '/database/db.sqlite', isolation_level=None)
         self.db = self.dbConn.cursor()
 
         # check if table exists
         self.db.execute(""" select name from sqlite_master where type='table' and name='%s'""" % self.table)
-
         # if table does not exist, create correct table
         if self.db.fetchone() is None:
             if self.table == 'peers':
-                self.db.execute(""" create table peers (ip varchar(50), selfPrivKey varchar(2000), selfPubKey varchar(1000), peerPubKey varchar(1000)) """)
+                logger.debug('creating peers table')
+                self.db.execute(""" create table peers (ip varchar(50), selfPrivKey varchar(5000), selfPubKey varchar(5000), peerPubKey varchar(1000)) """)
             if self.table == 'test':
                 self.db.execute(""" create table test (t1 varchar(50), t2 varchar(50)) """)
 
@@ -47,6 +47,7 @@ class database:
 
             [data]: a standard list, this is what will be entered into the columns, in order
         """
+        
         # when inserting n amount of values, we must parse the data into a single string
         values = ''
         n = 0
@@ -56,11 +57,12 @@ class database:
                 values = values + "'" + i + "'"
             else:
                 values = values + "'" + i + "', "
-        
+
+        # build query
+        q = "insert into %s values (%s)" % (self.table, values)
+
         # insert into table
-        self.db.execute("""insert into %(table)s values (%(values)s);""", (
-            {'table': self.table, 'values': values}))
-        self.dbConn.commit()
+        self.db.execute(q)
     
     def update(self, data, where):
         """ update specified rows
@@ -70,25 +72,31 @@ class database:
             [where]: a sql condition
         """
 
-        # update values
-        self.db.execute("""update %(table)s set %(data)s where %(where)s;""", (
-            {'table': self.table, 'data': data, 'where': where}))
-        self.dbConn.commit()
+        # build query
+        q = "update %s set %s where %s" % (self.table, where, data)
 
-    def get(self, where, select='*'):
+        # update values
+        self.db.execute(q)
+
+    def get(self, condition, select='*'):
         """ query table and retrieve all corresponding entries
 
-            [where]: a sql conditions
+            [condition]: sql conditions
 
             [select]: (optional) specify columns to return
         """
 
-        # execute query
-        self.db.execute(""" select %(select)s from %(table)s where %(where)s;""", (
-            {'select' : select, 'table': self.table, 'where': where}))
+        # for some stupid reason, this wont work unless i reinitialize the connection
+        self.__dbConnect()
 
-        # get all rows and return
-        return self.db.fetchall()
+        # build query, if you need to sanatize any input, use ? and use the built in string builder
+        q = "select %s from %s where %s" % (select, self.table, condition)
+
+        # execute query
+        self.db.execute(q)
+
+        # get first row and return
+        return self.db.fetchone()
 
     def delete(self, where):
         """ delete a row
@@ -96,6 +104,7 @@ class database:
             [where]: a sql conditions
         """
 
-        self.db.execute(""" delete from %(table)s where %(where)s;""", (
-            {'table': self.table, 'where': where}))
-        self.dbConn.commit()
+        if self.table == "peers":
+            self.db.execute("delete from peers where ?", (where))
+        if self.table == "test":
+            self.db.execute("delete from test where ?", (where))
