@@ -8,6 +8,7 @@ import threading
 import time
 
 from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA256
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
@@ -27,6 +28,12 @@ def authenticatePeer(address):
     # derive public key from private key and export
     pubKey = privKey.publickey().exportKey("PEM").decode('utf-8')
 
+    # remove newlines in pub and priv key
+    pubKeyFormatted = ''.join([item for item in pubKey.split('\n')])
+    privKeyFormatteed = ''.join([item for item in privKey.exportKey("PEM").decode('utf-8').split('\n')])
+
+    # insert key in db
+    # pyddle.dbPeers.insert([address, privKeyFormatteed, pubKeyFormatted, 'authInProg'])
     pyddle.dbPeers.insert([address, privKey.exportKey("PEM").decode('utf-8'), pubKey, 'authInProg'])
 
     # send public key
@@ -41,38 +48,50 @@ def handleKREQ(peerconn, msgdata):
     # derive public key from private key and export
     pubKey = privKey.publickey().exportKey("PEM").decode('utf-8')
 
+    # remove newlines in pub and priv key
+    pubKeyFormatted = ''.join([item for item in pubKey.split('\n')])
+    privKeyFormatteed = ''.join([item for item in privKey.exportKey("PEM").decode('utf-8').split('\n')])
+
     # reply with our public key
     pyddle.p2pNode.connectandsend(peerconn.host, 51234, 'KRES', pubKey)
 
     # store info in db
+    # pyddle.dbPeers.insert([peerconn.host, privKeyFormatteed, pubKeyFormatted, str(msgdata)])
     pyddle.dbPeers.insert([peerconn.host, privKey.exportKey("PEM").decode('utf-8'), pubKey, str(msgdata)])
 
 def handleKRES(peerconn, msgdata):
     """ this handles the key response. read the functions in plain english """
 
+    # build condition
+    c = "ip=" + "'" + peerconn.host + "'"
+
     # get our private key for the peer
-    key = str(pyddle.dbPeers.get("ip", 'selfPrivKey'))
-    print(key)
+    key = pyddle.dbPeers.get(c, 'selfPrivKey')
+    key = key[0].replace('\n', """ \n """)
     selfPrivKey = RSA.import_key(key)
-    print('heee')
 
     # sign a verification message
-    verifMsg = pkcs1_15.new(selfPrivKey).sign('trustme?')
+    msg = SHA256.new(b'trustme?')
+    verifMsg = pkcs1_15.new(selfPrivKey).sign(msg)
 
     # send with our signed verification message
-    pyddle.p2pNode.connectandsend(peerconn.host, 51234, 'AREQ', verifMsg)
+    pyddle.p2pNode.connectandsend(peerconn.host, 51234, 'AREQ', str(verifMsg))
 
     # add the peer's public key to the database
-    pyddle.dbPeers.update('peerPubKey=%s' % msgdata, 'ip=%s' % peerconn.ip)
+    pyddle.dbPeers.update('peerPubKey=%s' % msgdata, 'ip=%s' % peerconn.host)
 
 def handleAREQ(peerconn, msgdata):
     """ handle authentication requests """
 
+    # build condition
+    c = "ip=" + "'" + peerconn.host + "'"
+
     # get our private key for the peer
-    selfPrivKey = RSA.import_key(pyddle.dbPeers.get('ip=%s' % peerconn.ip, 'selfPrivKey'))
+    selfPrivKey = RSA.import_key(pyddle.dbPeers.get(c, 'selfPrivKey'))
+    # do this boi for everyone key = key[0].replace('\n', """ \n """) TODO
 
     # get their public key
-    peerPubKey = RSA.import_key(pyddle.dbPeers.get('ip=%s' % peerconn.ip, 'selfPrivKey'))
+    peerPubKey = RSA.import_key(pyddle.dbPeers.get(c, 'peerPubKey'))
 
     # check the signature
     try:
@@ -98,7 +117,7 @@ def handleARES(peerconn, msgdata):
     """ oh boy, our authentication request went through! lets see if this fellow is legit """
 
     # get their public key
-    peerPubKey = RSA.import_key(pyddle.dbPeers.get('ip=%s' % peerconn.ip, 'selfPrivKey'))
+    peerPubKey = RSA.import_key(pyddle.dbPeers.get('ip=%s' % peerconn.host, 'selfPrivKey'))
 
     # check the signature
     try:

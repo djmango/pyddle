@@ -9,6 +9,7 @@ from time import time
 import sys
 
 from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA256
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
@@ -47,13 +48,9 @@ if (args):
         b.insert(['jhon', 'groceryies'])
         logging.info(b.get("t1='jhon'"))
         c = pyddle.database.databaseUtil.database('peers', True)
-        logging.info(b.get("c"))
 
     if (testArg == 'k'):
-        key = RSA.generate(2048)
-        der = key.exportKey("DER")
-        print(der)
-        key2 = RSA.import_key(der)
-        print(key2)
+        msg = SHA256.new(b'trustme?')
+        print(msg)
 
 logging.info("executed in %s seconds" % (time() - start_time))
