@@ -48,6 +48,8 @@ class database:
             [data]: a standard list, this is what will be entered into the columns, in order
         """
         
+        self.__dbConnect()
+
         # when inserting n amount of values, we must parse the data into a single string
         values = ''
         n = 0
@@ -72,13 +74,15 @@ class database:
             [where]: a sql condition
         """
 
+        self.__dbConnect()
+
         # build query
         q = "update %s set %s where %s" % (self.table, where, data)
 
         # update values
         self.db.execute(q)
 
-    def get(self, condition, select='*'):
+    def get(self, condition=None, select='*'):
         """ query table and retrieve all corresponding entries
 
             [condition]: sql conditions
@@ -90,7 +94,10 @@ class database:
         self.__dbConnect()
 
         # build query, if you need to sanatize any input, use ? and use the built in string builder
-        q = "select %s from %s where %s" % (select, self.table, condition)
+        if condition is None:
+            q = "select %s from %s" % (select, self.table)
+        else:
+            q = "select %s from %s where %s" % (select, self.table, condition)
 
         # execute query
         self.db.execute(q)
@@ -103,6 +110,8 @@ class database:
 
             [where]: a sql conditions
         """
+
+        self.__dbConnect()
 
         if self.table == "peers":
             self.db.execute("delete from peers where ?", (where))
