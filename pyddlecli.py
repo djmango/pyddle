@@ -4,7 +4,7 @@
 
 import argparse
 import logging
-from os import path
+import os
 from time import time
 import sys
 
@@ -21,36 +21,44 @@ import pyddle
 
 logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(asctime)s (%(name)s) %(message)s', stream=sys.stdout)
 
-path = path.dirname(pyddle.__file__)
+path = os.path.dirname(pyddle.__file__)
 logging.info('found pyddle at ' + path)
 
 parser = argparse.ArgumentParser(description='python3 implementation of the puddle system')
 parser.add_argument('-t', '--test', help='test flag, runs specified test')
+parser.add_argument('-p', '--purge', help='purges p2p database', action='store_true')
 
 args = parser.parse_args()    
 
-if (args):
-    testArg = args.test
-    if (testArg == 'what'):
-        # temp test, for whatever im doing
-        # pyddle.p2p.p2p.connBootstrap('35.185.101.249', 8081)
-        # pyddle.p2p.p2p.connBootstrap('127.0.0.1', 8081)
-        # b = pyddle.database.databaseUtil.database('test', True)
-        # b.insert(['jhon', 'groceryies'])
-        # logging.info(b.get("t1='jhon'"))
-        pyddle.p2p.p2p.runBootstrap('0.0.0.0')
-    
-    if (testArg == 'w'):
-        pyddle.p2p.p2p.connBootstrap('192.168.192.14')
+if args:
+    if args.purge:
+        # purge the p2p database
+        if os.path.exists(path + '/database/db.sqlite'):
+            try:
+                os.remove(path + '/database/db.sqlite')
+                logging.info('purged database succesfully')
+            except Exception as e:
+                logging.error(e)
+        else:
+            logging.info('no database found, no need to purge')
 
-    if (testArg == 't'):
-        b = pyddle.database.databaseUtil.database('test', True)
-        b.insert(['jhon', 'groceryies'])
-        logging.info(b.get("t1='jhon'"))
-        c = pyddle.database.databaseUtil.database('peers', True)
+    if args.test:
+        if (args.test == 'what'):
+            # temp test, for whatever im doing
+            # pyddle.p2p.p2p.connBootstrap('35.185.101.249', 8081)
+            # pyddle.p2p.p2p.connBootstrap('127.0.0.1', 8081)
+            # b = pyddle.database.databaseUtil.database('test', True)
+            # b.insert(['jhon', 'groceryies'])
+            # logging.info(b.get("t1='jhon'"))
+            pyddle.p2p.p2p.runBootstrap('0.0.0.0')
+        
+        if (args.test == 'w'):
+            pyddle.p2p.p2p.connBootstrap('192.168.192.14')
 
-    if (testArg == 'k'):
-        msg = SHA256.new(b'trustme?')
-        print(msg)
+        if (args.test == 't'):
+            b = pyddle.database.databaseUtil.database('test', True)
+            b.insert(['jhon', 'groceryies'])
+            logging.info(b.get("t1='jhon'"))
+            c = pyddle.database.databaseUtil.database('peers', True)
 
 logging.info("executed in %s seconds" % (time() - start_time))
