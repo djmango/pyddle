@@ -42,12 +42,18 @@ def handleKREQ(peerconn, msgdata):
 
     # derive public key from private key and export
     pubKey = privKey.publickey().exportKey('PEM').decode('utf-8')
+    print('got our pubkey')
 
     # store info in db
     pyddle.dbPeers.insert([peerconn.host, privKey.exportKey('PEM').decode('utf-8'), pubKey, str(msgdata)])
+    print('insterted into db')
+
+    beee = pyddle.dbPeers.get()
+    print(beee)
 
     # reply with our public key
     pyddle.p2pNode.connectandsend(peerconn.host, 51234, 'KRES', pubKey)
+    print('heyy')
 
 def handleKRES(peerconn, msgdata):
     """ this handles the key response. read the functions in plain english """
@@ -140,9 +146,9 @@ def handleARES(peerconn, msgdata):
         pyddle.dbPeers.delete('ip=' % peerconn.host)
         #TODO blacklist the ip or something, its invalid
 
-def connBootstrap(host, port=51234):
+def connBootstrap(host, bootstrap=False,  port=51234):
     pyddle.dbPeers = pyddle.database.databaseUtil.database('peers', True)
-    pyddle.p2pNode = pyddle.p2p.p2pUtil.peer(25, port)
+    pyddle.p2pNode = pyddle.p2p.p2pUtil.peer(25, port, bootstrap=bootstrap)
     pyddle.p2pNode.addhandler('PING')
     pyddle.p2pNode.addhandler('ECHO', handleECHO)
     pyddle.p2pNode.addhandler('KREQ', handleKREQ)
@@ -154,6 +160,7 @@ def connBootstrap(host, port=51234):
     pyddle.p2pNode.addpeer('bootstrap', host, port)
     pyddle.p2pNode.addrouter({'bootstrap' : ['bootstrap', host, port]})
     pyddle.p2pNode.sendtopeer('bootstrap', 'PING', '')
+    # pyddle.p2pNode.sendtopeer('bootstrap', 'ECHO', 'eee')
     authenticatePeer(host)
 
 def runBootstrap(host, port=51234):

@@ -26,6 +26,7 @@ logging.info('found pyddle at ' + path)
 
 parser = argparse.ArgumentParser(description='python3 implementation of the puddle system')
 parser.add_argument('-t', '--test', help='test flag, runs specified test')
+parser.add_argument('-b', '--bootstrap', help='enables bootstrap mode', action='store_true')
 parser.add_argument('-p', '--purge', help='purges p2p database', action='store_true')
 
 args = parser.parse_args()    
@@ -42,6 +43,12 @@ if args:
         else:
             logging.info('no database found, no need to purge')
 
+    if args.bootstrap:
+        # enable bootstrap mode
+        bootstrap = True
+    else:
+        bootstrap = False
+
     if args.test:
         if (args.test == 'what'):
             # temp test, for whatever im doing
@@ -53,7 +60,7 @@ if args:
             pyddle.p2p.p2p.runBootstrap('0.0.0.0')
         
         if (args.test == 'w'):
-            pyddle.p2p.p2p.connBootstrap('192.168.192.14')
+            pyddle.p2p.p2p.connBootstrap('192.168.192.96', bootstrap)
 
         if (args.test == 't'):
             b = pyddle.database.databaseUtil.database('test', True)

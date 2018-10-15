@@ -5,6 +5,7 @@
 import logging
 import os
 import socket
+import ssl
 import threading
 import time
 import traceback
@@ -23,7 +24,7 @@ class peer:
 
     """
 
-    def __init__(self, maxpeers, serverport, myid=None, serverhost=None, debug=False):
+    def __init__(self, maxpeers, serverport, myid=None, serverhost=None, debug=False, bootstrap=False):
         """ Initializes a peer servent (sic.) with the ability to catalog
         information for up to maxpeers number of peers (maxpeers may
         be set to 0 to allow unlimited number of peers), listening on
@@ -36,6 +37,7 @@ class peer:
         self.debug = debug
         self.maxpeers = int(maxpeers)
         self.serverport = int(serverport)
+        self.bootstrap = bootstrap
         if serverhost:
             self.serverhost = serverhost
         else:
@@ -54,6 +56,11 @@ class peer:
 
         self.handlers = {}
         self.router = None
+
+        # context setup
+        self.serverContext = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        self.serverContext.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1 # disable the outdated
+        self.serverContext.set_ciphers('EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH') # from https://cipherli.st/
 
     def __initserverhost(self):
         """ Attempt to connect to an Internet host in order to determine the
@@ -77,7 +84,7 @@ class peer:
         logger.debug('Connected ' + str(clientsock.getpeername()))
 
         host, port = clientsock.getpeername()
-        peerconn = peerConnection(str(host), host, port, clientsock, debug=False)
+        peerconn = peerConnection(str(host), host, port, clientsock, debug=False, bootstrap=self.bootstrap)
 
         try:
             msgtype, msgdata = peerconn.recvdata()
@@ -96,8 +103,7 @@ class peer:
 
         logger.debug('Disconnecting ' + str(clientsock.getpeername()))
         peerconn.close()
-
-    # end handlepeer method
+        # end handlepeer method
 
     def __runstabilizer(self, stabilizer, delay):
 
@@ -196,6 +202,7 @@ class peer:
 
         """
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s = self.serverContext.wrap_socket(s, server_side=True)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(('', port))
         s.listen(backlog)
@@ -238,7 +245,14 @@ class peer:
         """
         msgreply = []
         try:
-            peerconn = peerConnection(pid, host, port, debug=self.debug)
+            print(pid)
+            print(host)
+            print(port)
+            print(type(msgdata))
+            print(msgtype)
+            print(self.bootstrap)
+            peerconn = peerConnection(pid, host, port, debug=self.debug, bootstrap=self.bootstrap)
+            print('got peercon')
             peerconn.senddata(msgtype, msgdata)
             logger.debug('Sent %s: %s' % (pid, msgtype))
 
@@ -272,7 +286,7 @@ class peer:
             try:
                 logger.debug('Check live %s' % pid)
                 host, port = self.peers[pid]
-                peerconn = peerConnection(pid, host, port, debug=self.debug)
+                peerconn = peerConnection(pid, host, port, debug=self.debug, bootstrap=self.bootstrap)
                 peerconn.senddata('PING', '')
                 isconnected = True
             except:
@@ -301,6 +315,7 @@ class peer:
                 logger.debug('Listening for connections...')
                 clientsock, clientaddr = s.accept()
                 clientsock.settimeout(None)
+                clientsock = self.serverContext.wrap_socket(clientsock, server_side=True)
 
                 t = threading.Thread(target=self.__handlepeer,
                                      args=[clientsock])
@@ -308,6 +323,9 @@ class peer:
             except KeyboardInterrupt:
                 logger.info('KeyboardInterrupt: stopping mainloop')
                 self.shutdown = True
+                continue
+            except ssl.SSLError as e:
+                logger.debug(e)
                 continue
             except:
                 if self.debug:
@@ -324,7 +342,7 @@ class peer:
 
 class peerConnection:
 
-    def __init__(self, peerid, host, port, sock=None, debug=False):
+    def __init__(self, peerid, host, port, sock=None, debug=False, bootstrap=False):
 
         # any exceptions thrown upwards
 
@@ -332,10 +350,18 @@ class peerConnection:
         self.debug = debug
         self.host = host
         self.port = port
+        self.bootstrap = bootstrap
 
         if not sock:
-            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # self.context = context = ssl.create_default_context()
+            self.clientContext = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            self.clientContext.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1  # disable the outdated 
+            self.clientContext.set_ciphers('EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH') # from https://cipherli.st/
+
             self.s.connect((host, int(port)))
+            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.s = self.clientContext.wrap_socket(self.s)
+
         else:
             self.s = sock
 
